@@ -1,0 +1,177 @@
+ // Your web app's Firebase configuration
+  var firebaseConfig = {
+    apiKey: "AIzaSyBagJ8ZbpFyColMvMDFKGrIzU33B7Qx1Rk",
+    authDomain: "virtualclass-web.firebaseapp.com",
+    projectId: "virtualclass-web",
+    storageBucket: "virtualclass-web.appspot.com",
+    messagingSenderId: "374993914119",
+    appId: "1:374993914119:web:d701d5f9ccc78ee046dda2"
+  };
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  
+  // [START get_messaging_object]
+  // Retrieve Firebase Messaging object.
+  const messaging = firebase.messaging();
+  // [END get_messaging_object]
+  const token ='BPgCElty0gXB0haEzBSd8aICWY_FXDBMaQBHcA4KEPCP8GsPWW8kC6m-rPhdg43Dem6lGxjexkdYyT_GvP5Jges';
+ 
+  // IDs of divs that display registration token UI or request permission UI.
+  const tokenDivId = 'token_div';
+  const permissionDivId = 'permission_div';
+
+  // [START receive_message]
+  // Handle incoming messages. Called when:
+  // - a message is received while the app has focus
+  // - the user clicks on an app notification created by a service worker
+  //   `messaging.setBackgroundMessageHandler` handler.
+  messaging.onMessage((payload) => {
+//    console.log('Message received. ', payload);
+    // [START_EXCLUDE]
+    // Update the UI to include the received message.
+    appendMessage(payload);
+    // [END_EXCLUDE]
+  });
+  // [END receive_message]
+
+  function resetUI() {
+
+
+    // [START get_token]
+    // Get registration token. Initially this makes a network call, once retrieved
+    // subsequent calls to getToken will return from cache.
+    messaging.getToken({vapidKey: token}).then((currentToken) => {
+      if (currentToken) {
+        sendTokenToServer(currentToken);
+        updateUIForPushEnabled(currentToken);
+      } else {
+        // Show permission request.
+//        console.log('No registration token available. Request permission to generate one.');
+        // Show permission UI.
+        setTokenSentToServer(false);
+      }
+    }).catch((err) => {
+//      console.log('An error occurred while retrieving token. ', err);
+      setTokenSentToServer(false);
+    });
+    // [END get_token]
+  }
+
+
+ 
+  // Send the registration token your application server, so that it can:
+  // - send messages back to this app
+  // - subscribe/unsubscribe the token from topics
+  function sendTokenToServer(currentToken) {
+    if (!isTokenSentToServer()) {
+//      console.log('Sending token to server...');
+      // TODO(developer): Send the current token to your server.
+      setTokenSentToServer(true);
+    } else {
+/*      console.log('Token already sent to server so won\'t send it again ' +
+          'unless it changes');*/
+    }
+
+  }
+
+  function isTokenSentToServer() {
+    return window.localStorage.getItem('sentToServer') === '1';
+  }
+
+  function setTokenSentToServer(sent) {
+    window.localStorage.setItem('sentToServer', sent ? '1' : '0');
+  }
+
+ 
+  function requestPermission() {
+//    console.log('Requesting permission...');
+    // [START request_permission]
+    Notification.requestPermission().then((permission) => {
+      if (permission === 'granted') {
+//        console.log('Notification permission granted.');
+        // TODO(developer): Retrieve a registration token for use with FCM.
+        // [START_EXCLUDE]
+        // In many cases once an app has been granted notification permission,
+        // it should update its UI reflecting this.
+        resetUI();
+        // [END_EXCLUDE]
+      } else {
+//        console.log('Unable to get permission to notify.');
+      }
+    });
+    // [END request_permission]
+  }
+
+  function deleteToken() {
+    // Delete registraion token.
+    // [START delete_token]
+    messaging.getToken().then((currentToken) => {
+      messaging.deleteToken(currentToken).then(() => {
+//        console.log('Token deleted.');
+        setTokenSentToServer(false);
+        // [START_EXCLUDE]
+        // Once token is deleted update UI.
+        resetUI();
+        // [END_EXCLUDE]
+      }).catch((err) => {
+//        console.log('Unable to delete token. ', err);
+      });
+      // [END delete_token]
+    }).catch((err) => {
+      //console.log('Error retrieving registration token. ', err);
+
+    });
+
+  }
+
+  // Add a message to the messages element.
+  function appendMessage(payload) {
+    const messagesElement = document.querySelector('#messages');
+    const dataHeaderElement = document.createElement('h5');
+    const dataElement = document.createElement('pre');
+    dataElement.style = 'overflow-x:hidden;';
+    dataHeaderElement.textContent = 'Received message:';
+    dataElement.textContent = JSON.stringify(payload, null, 2);
+	notifyMe(JSON.stringify(payload, null, 2));
+	
+	Notification(JSON.stringify(payload, null, 2));
+//	console.log('JSON.stringify(payload, null, 2 - '+JSON.stringify(payload, null, 2));
+   // messagesElement.appendChild(dataHeaderElement);
+   // messagesElement.appendChild(dataElement);
+  }
+ 
+
+  function updateUIForPushEnabled(currentToken) {	
+  	var atualiza_token = $('#AtualizaTokenFirebase').val();
+if (atualiza_token==1) {	ajax(this,'AtualizaFirebase.jsp?T='+currentToken,'divAtualizaToken');	    }
+  }
+
+ 
+  resetUI();
+  
+  function notifyMe(  conteudo) {
+  // Verifica se o browser suporta notificações
+  //console.log('Entrando na função de notifi~cação'+conteudo);
+  if (!("Notification" in window)) {
+//    alert("Este browser não suporta notificações de Desktop");
+  }
+
+  // Let's check whether notification permissions have already been granted
+  else if (Notification.permission === "granted") {
+    // If it's okay let's create a notification
+    var notification = new Notification(conteudo);
+  }
+
+  // Otherwise, we need to ask the user for permission
+  else if (Notification.permission !== 'denied') {
+    Notification.requestPermission(function (permission) {
+      // If the user accepts, let's create a notification
+      if (permission === "granted") {
+        var notification = new Notification(conteudo);
+      }
+    });
+  }
+
+  // At last, if the user has denied notifications, and you
+  // want to be respectful there is no need to bother them any more.
+}
